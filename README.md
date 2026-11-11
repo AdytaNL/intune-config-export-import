@@ -72,7 +72,9 @@ remediations, Conditional Access, and role scope tags (they are stripped).
 | `<Type>_<Name>_<Id>.meta.json` | The memory: the original policy ID and name, the source tenant ID, the assigned groups by ID and name (including exclusions), and the original value of every placeholder. |
 
 The export walks every object recursively and checks every string value for the source
-tenant ID, so it is also found in a OneDrive setting, an OMA-URI value or an XML blob.
+tenant ID, so it is also found in a OneDrive setting or in the middle of a longer string.
+Custom OMA-URI values that Graph returns encrypted (`isEncrypted`) cannot be checked; see
+below.
 
 It also writes `_manifest.json`: one overview of every policy with its assignments and
 placeholders. That is the documentation of the source tenant at the time of the export.
@@ -159,9 +161,10 @@ assignments. `-WhatIf` shows what would be created without creating anything.
   links again in the target.
   For a value that differs in the target tenant, put your own token in the clean JSON
   (for example `{{SCEP_URL}}`) and give it a value under `tokenOverrides`.
-- **Values that Intune keeps encrypted** (for example some custom OMA-URI values and
-  pre-shared keys) are exported the way Graph returns them. Check those profiles after
-  import.
+- **Values that Intune keeps encrypted** (for example custom OMA-URI values marked
+  `isEncrypted`, and pre-shared keys) are exported the way Graph returns them: the export
+  cannot replace a tenant ID in them, and the import may not get a usable value. Check
+  those profiles after import and re-enter the values where needed.
 - **Treat an export folder as sensitive.** The meta files and the manifest contain the
   source tenant ID and group IDs and names, and the policies may contain internal URLs.
   Do not commit an export to a public repository.
