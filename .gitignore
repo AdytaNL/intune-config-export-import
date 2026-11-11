@@ -1,0 +1,23 @@
+# Exports and mapping files (tenant IDs, group names and IDs)
+*.meta.json
+_manifest.json
+mapping-*.json
+export/
+exports/
+
+# Logs
+*.log
+*.transcript.txt
+
+# Local settings and credentials
+*.local.ps1
+*.local.json
+.env
+*.pfx
+*.cer
+
+# Editor / OS
+.vscode/
+.idea/
+Thumbs.db
+.DS_Store
