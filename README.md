@@ -138,6 +138,12 @@ assignments. `-WhatIf` shows what would be created without creating anything.
   the error count.
 - **Created policy IDs are only in the console output.** Run the import inside
   `Start-Transcript` so you can find and clean up what a run created.
+- **Use the tenant ID (GUID) for `-TenantId`, not a domain name.** `Connect-MgGraph`
+  accepts both, but the export only replaces the value you pass, so with a domain name the
+  source tenant ID stays in the policies.
+- **`New-IntuneImportMapping.ps1` overwrites its output file.** Give each target tenant
+  its own `-OutputFile` and keep filled-in mapping files out of the way of a new run.
+- **A group that is not listed in `groupMappings` keeps its source name** in the target.
 - **Assignment filters are not carried over.** Only the target type and the group are
   exported. A policy that used a filter in the source applies to the whole group in the
   target. Add the filters again after import, before a policy reaches production groups.
