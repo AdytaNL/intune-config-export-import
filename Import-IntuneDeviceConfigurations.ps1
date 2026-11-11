@@ -329,11 +329,11 @@ function Set-PolicyAssignments {
     if ($assignmentList.Count -eq 0) { return }
 
     # Build the body explicitly so the array survives:
-    # ConvertTo-Json unwraps a single item, Graph always expects a list
+    # Graph always expects a list here, also for a single assignment
     $assignArray = [object[]]@($assignmentList)
     $bodyObj     = [PSCustomObject]@{ assignments = $assignArray }
     $bodyJson    = $bodyObj | ConvertTo-Json -Depth 20 -Compress
-    # Force array notation for a single item
+    # Defensive: write the single-item case as a JSON list explicitly
     if ($assignArray.Count -eq 1) {
         $singleItem = ($assignArray[0] | ConvertTo-Json -Depth 20 -Compress)
         $bodyJson   = '{"assignments":[' + $singleItem + ']}'

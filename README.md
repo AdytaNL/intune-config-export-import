@@ -120,6 +120,10 @@ assignments. `-WhatIf` shows what would be created without creating anything.
 - **Policies are assigned on import.** Groups with the same name in the target tenant
   receive the policy right away. Want to look first? Leave the group names in
   `groupMappings` pointing to a pilot group, or remove the assignments afterwards.
+- **An open placeholder does not stop the import.** It is reported as
+  `[UNREPLACED PLACEHOLDER]`, but the policy is still created with the token in it. Read
+  the `-WhatIf` output for these warnings first. `-WhatIf` does not look up groups; use
+  the group check in [docs/SETUP.md](docs/SETUP.md) for that.
 - **Assignment filters are not carried over.** Only the target type and the group are
   exported. A policy that used a filter in the source applies to the whole group in the
   target. Add the filters again after import, before a policy reaches production groups.
