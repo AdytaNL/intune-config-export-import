@@ -125,6 +125,15 @@ assignments. `-WhatIf` shows what would be created without creating anything.
   `[UNREPLACED PLACEHOLDER]`, but the policy is still created with the token in it. Read
   the `-WhatIf` output for these warnings first. `-WhatIf` does not look up groups; use
   the group check in [docs/SETUP.md](docs/SETUP.md) for that.
+- **All devices / All users assignments are carried over as they are.** They do not go
+  through the mapping file. Keep such policies out of the first import (`-Exclude`) or
+  remove the assignment right after the import.
+- **Do not edit `_assignments` in a clean JSON.** The import matches each assignment to
+  the meta file by position; removing one shifts the groups.
+- **`[NOT ASSIGNED]` still counts as succeeded** in the summary. Read the warnings, not only
+  the error count.
+- **Created policy IDs are only in the console output.** Run the import inside
+  `Start-Transcript` so you can find and clean up what a run created.
 - **Assignment filters are not carried over.** Only the target type and the group are
   exported. A policy that used a filter in the source applies to the whole group in the
   target. Add the filters again after import, before a policy reaches production groups.
@@ -134,7 +143,8 @@ assignments. `-WhatIf` shows what would be created without creating anything.
   or an Endpoint Security intent fail, the policy exists but gets no assignments. Fix or
   delete it in the admin center.
 - **The mapping belongs to one target tenant.** If `SOURCE_TENANT_ID` in the mapping file
-  is not the `-TenantId` of the run, the import stops before connecting.
+  is filled in and is not the `-TenantId` of the run, the import stops before connecting.
+  Left empty, `{{SOURCE_TENANT_ID}}` stays in the policies and is reported as unreplaced.
 - **Text values only.** The tenant ID is found in string values. Base64 payloads (for
   example custom OMA-URI XML values and Apple custom profiles) are not decoded; check them.
 - **Other tenant-bound IDs.** Settings Catalog policies that refer to reusable settings
