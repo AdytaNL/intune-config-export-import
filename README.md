@@ -58,7 +58,8 @@ complete set of policies, with assignments and references, to another tenant.
 
 After a policy is created, the import assigns it with the `assign` action of its endpoint.
 
-Not covered: compliance policies, apps, app protection, enrollment profiles, scripts and
+Not covered: compliance policies, apps, app protection, enrollment profiles, Windows
+feature, quality and driver update profiles (update rings are covered), scripts and
 remediations, Conditional Access, and role scope tags (they are stripped).
 
 ## How it works
@@ -140,10 +141,12 @@ assignments. `-WhatIf` shows what would be created without creating anything.
   (for example in firewall rules or device control) and Administrative Templates based on
   ADMX files you imported yourself use IDs that only exist in the source tenant. Recreate
   those references in the target.
-- **Only the tenant ID and assignment groups are tokenised.** Other tenant-specific
-  references are carried over as they are: certificate profiles that point to a trusted
-  root or a SCEP/PKCS connector, Wi-Fi or VPN profiles that point to a certificate,
-  URLs and domain names of the source organisation. Check those policies after import.
+- **Only the tenant ID and assignment groups are tokenised.** URLs and domain names of
+  the source organisation are carried over as they are. The link from a certificate
+  profile to a trusted root or a SCEP/PKCS connector, and from a Wi-Fi or VPN profile to
+  a certificate, is a navigation property that a plain GET does not return, so it is not
+  exported at all: the profile is created without it, or Graph refuses it. Set those
+  links again in the target.
   For a value that differs in the target tenant, put your own token in the clean JSON
   (for example `{{SCEP_URL}}`) and give it a value under `tokenOverrides`.
 - **Values that Intune keeps encrypted** (for example some custom OMA-URI values and
