@@ -22,7 +22,7 @@ script can do is the overlap of the Graph scopes and your own role in the tenant
 
 | Script | Graph scopes (delegated) | Intune role, at least |
 |---|---|---|
-| Export (source tenant) | `DeviceManagementConfiguration.Read.All`, `DeviceManagementManagedDevices.Read.All`, `Group.Read.All` | Read Only Operator |
+| Export (source tenant) | `DeviceManagementConfiguration.Read.All`, `Group.Read.All` | Read Only Operator |
 | Import (target tenant) | `DeviceManagementConfiguration.ReadWrite.All`, `Group.Read.All` | Policy and Profile Manager; for Endpoint Security policies also the matching permissions, for example Endpoint Security Manager |
 
 Intune Administrator covers both. These scopes need admin consent for the Microsoft Graph
@@ -137,8 +137,9 @@ receive anything, point the groups in `groupMappings` to a pilot group first.
 
 - The summary shows the expected number of successes and `Errors : 0`.
 - For Administrative Templates, every policy reports `Definitions: n ok, 0 failed`.
-- No `[ASSIGNMENT ERROR]` or `[GROUP NOT FOUND]` warnings, or you know which assignment
-  is missing.
+- No `[ASSIGNMENT ERROR]`, `[GROUP NOT FOUND]` or `[EXCLUSION GROUP NOT FOUND]` warnings,
+  or you know which assignment is missing. A missing exclusion group means the policy got
+  no assignments at all.
 
 ## 7. After the import
 

@@ -51,7 +51,7 @@ complete set of policies, with assignments and references, to another tenant.
 |---|---|---|
 | Classic profiles | `deviceManagement/deviceConfigurations` | One request |
 | Settings Catalog (including LAPS and newer Endpoint Security) | `deviceManagement/configurationPolicies` | One request, settings in the same body |
-| Administrative Templates (ADMX) | `deviceManagement/groupPolicyConfigurations` | An empty policy, then each definition value separately |
+| Administrative Templates (ADMX) | `deviceManagement/groupPolicyConfigurations` | An empty policy, then each definition value separately, bound to its definition and presentations with `@odata.bind` |
 | Legacy Endpoint Security intents | `deviceManagement/intents` | The intent, then all settings in one `updateSettings` call |
 
 After a policy is created, the import assigns it with the `assign` action of its endpoint.
@@ -65,7 +65,7 @@ remediations, Conditional Access, and role scope tags (they are stripped).
 
 | File | Contents |
 |---|---|
-| `<Type>_<Name>_<Id>.json` | The clean template. The policy's own ID, dates, version and scope tags are removed (nested setting IDs stay). The source tenant ID becomes `{{SOURCE_TENANT_ID}}`, also inside longer strings. Group IDs in assignments become `{{GROUP_<NAME>}}`. |
+| `<Type>_<Name>_<Id>.json` | The clean template. The policy's own ID, dates, version and scope tags are removed (nested setting IDs stay). The source tenant ID becomes `{{SOURCE_TENANT_ID}}`, also inside longer strings. Group IDs in assignments become `{{GROUP_<NAME>}}` (exclusions: `{{EXCL_GROUP_<NAME>}}`). |
 | `<Type>_<Name>_<Id>.meta.json` | The memory: the original policy ID and name, the source tenant ID, the assigned groups by ID and name (including exclusions), and the original value of every placeholder. |
 
 The export walks every object recursively and checks every string value for the source
@@ -102,8 +102,10 @@ and a naming convention becomes the agreement between tenants.
 
 Per policy the import replaces the placeholders, reports any `{{TOKEN}}` that is still
 open, creates the policy through the route of its kind and then assigns it. Groups are
-looked up by display name in the target tenant. A group that is not found is reported
-and only that assignment is skipped.
+looked up by display name in the target tenant. A group that is not found is reported.
+A missing included group skips only that assignment. A missing **exclusion** group skips
+all assignments of that policy, because without the exclusion the policy would reach more
+devices than in the source.
 
 Select what to import with `-Filter` and `-Exclude` (wildcards on the file name), or with
 `-Interactive`, a selection window that shows the real policy name and the source
@@ -121,6 +123,12 @@ assignments. `-WhatIf` shows what would be created without creating anything.
   target. Add the filters again after import, before a policy reaches production groups.
 - **Group names must be unique in the target tenant.** The lookup takes the first group
   with that display name.
+- **Text values only.** The tenant ID is found in string values. Base64 payloads (for
+  example custom OMA-URI XML values and Apple custom profiles) are not decoded; check them.
+- **Other tenant-bound IDs.** Settings Catalog policies that refer to reusable settings
+  (for example in firewall rules or device control) and Administrative Templates based on
+  ADMX files you imported yourself use IDs that only exist in the source tenant. Recreate
+  those references in the target.
 - **Only the tenant ID and assignment groups are tokenised.** Other tenant-specific
   references are carried over as they are: certificate profiles that point to a trusted
   root or a SCEP/PKCS connector, Wi-Fi or VPN profiles that point to a certificate,
@@ -145,7 +153,7 @@ assignments. `-WhatIf` shows what would be created without creating anything.
 | `TenantId` | yes | `00000000-0000-0000-0000-000000000000` |
 | `OutputPath` | yes | `C:\Export\Contoso` |
 
-Delegated scopes: `DeviceManagementConfiguration.Read.All`, `DeviceManagementManagedDevices.Read.All`, `Group.Read.All`.
+Delegated scopes: `DeviceManagementConfiguration.Read.All`, `Group.Read.All`.
 
 ### New-IntuneImportMapping.ps1
 

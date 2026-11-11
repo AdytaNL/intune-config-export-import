@@ -13,7 +13,9 @@
 
     Placeholder tokens written by the export:
       {{SOURCE_TENANT_ID}}        The source tenant ID, also when it is embedded in a longer value
-      {{GROUP_<NAME>}}            Entra group object IDs in assignments (resolved by group name on import)
+      {{GROUP_<NAME>}}            Entra group object IDs in included assignments
+      {{EXCL_GROUP_<NAME>}}       Entra group object IDs in excluded assignments
+                                  (both resolved by group name on import)
 
     Other tenant-specific references (for example certificate profiles that point to a
     trusted root or a SCEP connector) are not tokenised automatically. Put your own
@@ -36,8 +38,7 @@
 
 .NOTES
     Requires: Microsoft.Graph.Authentication module, PowerShell 7
-    Scopes:   DeviceManagementConfiguration.Read.All, DeviceManagementManagedDevices.Read.All,
-              Group.Read.All (to resolve group names)
+    Scopes:   DeviceManagementConfiguration.Read.All, Group.Read.All (to resolve group names)
 #>
 
 [CmdletBinding()]
@@ -317,14 +318,14 @@ function ConvertTo-CleanAssignments {
         }
 
         switch -Wildcard ($targetType) {
-            '*groupAssignmentTarget*' {
+            '*.groupAssignmentTarget' {
                 $groupName  = Resolve-GroupName -GroupId $groupId
                 $groupToken = ConvertTo-SafeGroupToken -Ctx $Ctx -GroupId $groupId -GroupName $groupName -GroupType "GROUP"
                 $cleanTarget['groupId'] = $groupToken
                 $metaEntry['groupId']   = $groupId
                 $metaEntry['groupName'] = $groupName
             }
-            '*exclusionGroupAssignmentTarget*' {
+            '*.exclusionGroupAssignmentTarget' {
                 $groupName  = Resolve-GroupName -GroupId $groupId
                 $groupToken = ConvertTo-SafeGroupToken -Ctx $Ctx -GroupId $groupId -GroupName $groupName -GroupType "EXCL_GROUP"
                 $cleanTarget['groupId'] = $groupToken
@@ -464,7 +465,6 @@ if (-not (Test-Path $OutputPath)) {
 Write-Host "`nConnecting to Microsoft Graph (tenant: $TenantId)..." -ForegroundColor Cyan
 Connect-MgGraph -TenantId $TenantId `
     -Scopes "DeviceManagementConfiguration.Read.All",
-            "DeviceManagementManagedDevices.Read.All",
             "Group.Read.All" `
     -NoWelcome
 
@@ -547,6 +547,11 @@ foreach ($gpo in $gpoConfigs) {
         $detail          = Invoke-MgGraphRequest -Method GET -Uri "$GRAPH_BASE/deviceManagement/groupPolicyConfigurations/$($gpo.id)" -ErrorAction Stop
         $definitionValues = Invoke-GraphGetAll -Uri "$GRAPH_BASE/deviceManagement/groupPolicyConfigurations/$($gpo.id)/definitionValues?`$expand=definition,presentationValues"
         $assignments     = Invoke-GraphGetAll -Uri "$GRAPH_BASE/deviceManagement/groupPolicyConfigurations/$($gpo.id)/assignments"
+
+        # Presentation values with their presentation: the import needs the presentation ID to bind each value
+        foreach ($dv in $definitionValues) {
+            $dv['presentationValues'] = Invoke-GraphGetAll -Uri "$GRAPH_BASE/deviceManagement/groupPolicyConfigurations/$($gpo.id)/definitionValues/$($dv['id'])/presentationValues?`$expand=presentation"
+        }
 
         $detail['definitionValues'] = $definitionValues
 

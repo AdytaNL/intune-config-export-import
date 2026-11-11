@@ -163,7 +163,7 @@ function Resolve-TargetGroupId {
         }
     } catch { }
 
-    Write-Warning "  [GROUP NOT FOUND] '$GroupName' - assignment skipped"
+    Write-Warning "  [GROUP NOT FOUND] '$GroupName'"
     return $null
 }
 
@@ -269,7 +269,7 @@ function Set-PolicyAssignments {
         $target     = [ordered]@{ '@odata.type' = $targetType }
 
         switch -Wildcard ($targetType) {
-            '*groupAssignmentTarget*' {
+            '*.groupAssignmentTarget' {
                 # Group name from the meta file, then resolve the object ID in the target tenant
                 $targetGroupName = $null
                 if ($meta -and $meta.groupName) {
@@ -287,7 +287,7 @@ function Set-PolicyAssignments {
                     else          { continue assignment }
                 }
             }
-            '*exclusionGroupAssignmentTarget*' {
+            '*.exclusionGroupAssignmentTarget' {
                 $targetGroupName = $null
                 if ($meta -and $meta.groupName) {
                     $sourceName = $meta.groupName
@@ -300,7 +300,12 @@ function Set-PolicyAssignments {
                 if ($targetGroupName) {
                     $groupId = Resolve-TargetGroupId -GroupName $targetGroupName
                     if ($groupId) { $target['groupId'] = $groupId }
-                    else          { continue assignment }
+                    else {
+                        # Without the exclusion the policy would reach more devices than in the source:
+                        # assign nothing for this policy (fail closed)
+                        Write-Warning "    [EXCLUSION GROUP NOT FOUND] '$targetGroupName' - no assignments made for this policy"
+                        return
+                    }
                 }
             }
             # allDevices / allLicensedUsers: the target is already complete
@@ -413,21 +418,36 @@ function Import-AdminTemplate {
         $defOk  = 0
         $defErr = 0
         foreach ($dv in $definitionValues) {
-            # Strip the expanded fields that do not belong in the POST
+            # Strip the expanded and read-only fields; reference the definition and each
+            # presentation with @odata.bind (navigation properties, not plain ID fields)
             $dvBody = [ordered]@{}
-            $dvSkip = @('id', 'createdDateTime', 'lastModifiedDateTime', 'definition', 'definitionId')
-            # definition.id is the actual definition reference
+            $dvSkip = @('id', 'createdDateTime', 'lastModifiedDateTime', 'definition', 'definitionId', 'presentationValues')
+            $defId  = $null
             if ($dv -is [System.Collections.IDictionary] -and $dv.Contains('definition') -and $dv['definition']) {
-                $dvBody['definitionId'] = $dv['definition']['id']
+                $defId = $dv['definition']['id']
+                $dvBody['definition@odata.bind'] = "$GRAPH_BASE/deviceManagement/groupPolicyDefinitions('$defId')"
             }
             foreach ($dvKey in @($dv.Keys)) {
                 if ($dvKey -notin $dvSkip) { $dvBody[$dvKey] = $dv[$dvKey] }
             }
+            $pvList = [System.Collections.Generic.List[object]]::new()
+            foreach ($pv in @($dv['presentationValues'])) {
+                if ($null -eq $pv) { continue }
+                $pvBody = [ordered]@{}
+                foreach ($pvKey in @($pv.Keys)) {
+                    if ($pvKey -notin @('id', 'createdDateTime', 'lastModifiedDateTime', 'presentation')) { $pvBody[$pvKey] = $pv[$pvKey] }
+                }
+                if ($pv.Contains('presentation') -and $pv['presentation']) {
+                    $pvBody['presentation@odata.bind'] = "$GRAPH_BASE/deviceManagement/groupPolicyDefinitions('$defId')/presentations('$($pv['presentation']['id'])')"
+                }
+                $pvList.Add($pvBody)
+            }
+            if ($pvList.Count -gt 0) { $dvBody['presentationValues'] = $pvList.ToArray() }
             try {
                 Invoke-GraphPost -Uri "$GRAPH_BASE/deviceManagement/groupPolicyConfigurations/$newId/definitionValues" -Body $dvBody | Out-Null
                 $defOk++
             } catch {
-                Write-Warning "    [DEFINITION ERROR] $($dvBody['definitionId']): $_"
+                Write-Warning "    [DEFINITION ERROR] $defId : $_"
                 $defErr++
             }
         }
