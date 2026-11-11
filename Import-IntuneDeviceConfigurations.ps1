@@ -156,12 +156,20 @@ function Resolve-TargetGroupId {
         $resp     = Invoke-MgGraphRequest -Method GET `
             -Uri "$GRAPH_BASE/groups?`$filter=displayName eq '$encoded'&`$select=id,displayName" `
             -ErrorAction Stop
+        if ($resp['value'] -and $resp['value'].Count -gt 1) {
+            # Two groups with the same name: do not guess
+            Write-Warning "  [GROUP NAME NOT UNIQUE] '$GroupName' ($($resp['value'].Count) groups)"
+            return $null
+        }
         if ($resp['value'] -and $resp['value'].Count -gt 0) {
             $id = $resp['value'][0]['id']
             $script:GroupCache[$GroupName] = $id
             return $id
         }
-    } catch { }
+    } catch {
+        Write-Warning "  [GROUP LOOKUP ERROR] '$GroupName': $_"
+        return $null
+    }
 
     Write-Warning "  [GROUP NOT FOUND] '$GroupName'"
     return $null
@@ -452,6 +460,11 @@ function Import-AdminTemplate {
             }
         }
         Write-Host "    Definitions: $defOk ok, $defErr failed" -ForegroundColor DarkGreen
+        if ($defErr -gt 0) {
+            # Do not assign a policy that is only partly created
+            Write-Warning "    [NOT ASSIGNED] Policy created with failed settings; fix or delete it before assigning"
+            return $true
+        }
     }
 
     if ($CleanAsgn.Count -gt 0) {
@@ -488,6 +501,9 @@ function Import-EndpointSecIntent {
             Write-Host "    Settings: $($settings.Count) settings updated" -ForegroundColor DarkGreen
         } catch {
             Write-Warning "    [SETTINGS ERROR] $_"
+            # Do not assign a policy without its settings
+            Write-Warning "    [NOT ASSIGNED] Policy created without its settings; fix or delete it before assigning"
+            return $true
         }
     }
 
@@ -510,6 +526,11 @@ if (-not (Test-Path $SourcePath)) {
 Write-Host "`nReading mapping file..." -ForegroundColor Cyan
 $mapping = Read-MappingFile -Path $MappingFile
 Write-Host "  Tokens loaded: $($mapping.Count + $script:PendingGroupMappings.Count)" -ForegroundColor Green
+
+# The mapping must be filled in for the tenant this run connects to
+if ($mapping['SOURCE_TENANT_ID'] -and $mapping['SOURCE_TENANT_ID'] -ne $TenantId) {
+    throw "SOURCE_TENANT_ID in the mapping file ($($mapping['SOURCE_TENANT_ID'])) is not the -TenantId of this run ($TenantId). Check that both belong to the same target tenant."
+}
 
 Write-Host "Connecting to Microsoft Graph (tenant: $TenantId)..." -ForegroundColor Cyan
 Connect-MgGraph -TenantId $TenantId `

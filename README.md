@@ -121,8 +121,13 @@ assignments. `-WhatIf` shows what would be created without creating anything.
 - **Assignment filters are not carried over.** Only the target type and the group are
   exported. A policy that used a filter in the source applies to the whole group in the
   target. Add the filters again after import, before a policy reaches production groups.
-- **Group names must be unique in the target tenant.** The lookup takes the first group
-  with that display name.
+- **Group names must be unique in the target tenant.** If two groups share a display
+  name, the import does not guess: it reports it and treats the group as not found.
+- **A partly created policy is not assigned.** If settings of an Administrative Template
+  or an Endpoint Security intent fail, the policy exists but gets no assignments. Fix or
+  delete it in the admin center.
+- **The mapping belongs to one target tenant.** If `SOURCE_TENANT_ID` in the mapping file
+  is not the `-TenantId` of the run, the import stops before connecting.
 - **Text values only.** The tenant ID is found in string values. Base64 payloads (for
   example custom OMA-URI XML values and Apple custom profiles) are not decoded; check them.
 - **Other tenant-bound IDs.** Settings Catalog policies that refer to reusable settings

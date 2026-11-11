@@ -93,8 +93,8 @@ foreach ($name in $map.groupMappings.PSObject.Properties.Value) {
 Disconnect-MgGraph
 ```
 
-Every line should end in `1`. A `0` means the assignment to that group will be skipped;
-a `2` or more means the import takes the first match.
+Every line should end in `1`. A `0` or a `2` and more means the import reports the group
+and does not use it.
 
 ## 5. Dry run
 
@@ -137,6 +137,8 @@ receive anything, point the groups in `groupMappings` to a pilot group first.
 
 - The summary shows the expected number of successes and `Errors : 0`.
 - For Administrative Templates, every policy reports `Definitions: n ok, 0 failed`.
+- No `[NOT ASSIGNED]` warnings. Such a policy was only partly created; fix or delete it,
+  then assign it by hand or import it again.
 - No `[ASSIGNMENT ERROR]`, `[GROUP NOT FOUND]` or `[EXCLUSION GROUP NOT FOUND]` warnings,
   or you know which assignment is missing. A missing exclusion group means the policy got
   no assignments at all.
