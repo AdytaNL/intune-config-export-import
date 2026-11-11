@@ -15,6 +15,8 @@ Background, design choices and pitfalls: [A proven setup: under the hood](https:
   to them once), with an Intune role that allows reading (source) or creating and assigning (target)
   device configuration, for example Intune Administrator.
 - Windows for `-Interactive` (it uses `Out-GridView`).
+- A test tenant: run the import there first, with `-WhatIf` and then for real, before you
+  import into a tenant that is in use.
 
 ## Quick start
 
