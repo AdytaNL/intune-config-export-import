@@ -125,7 +125,7 @@ assignments. `-WhatIf` shows what would be created without creating anything.
   references are carried over as they are: certificate profiles that point to a trusted
   root or a SCEP/PKCS connector, Wi-Fi or VPN profiles that point to a certificate,
   URLs and domain names of the source organisation. Check those policies after import.
-  For a value you want to replace on every import, put your own token in the clean JSON
+  For a value that differs in the target tenant, put your own token in the clean JSON
   (for example `{{SCEP_URL}}`) and give it a value under `tokenOverrides`.
 - **Values that Intune keeps encrypted** (for example some custom OMA-URI values and
   pre-shared keys) are exported the way Graph returns them. Check those profiles after
