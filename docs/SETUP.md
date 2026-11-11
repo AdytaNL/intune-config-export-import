@@ -131,7 +131,9 @@ Or pick in a window (Windows only):
 ```
 
 Policies are assigned right after they are created. If you want to review before devices
-receive anything, point the groups in `groupMappings` to a pilot group first.
+receive anything, point the groups in `groupMappings` to a pilot group first. Point
+exclusion groups to a real exclusion group, not to the pilot group: one entry serves both
+inclusion and exclusion, so mapping everything to the pilot group excludes the pilot too.
 
 **Check:**
 

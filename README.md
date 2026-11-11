@@ -122,7 +122,9 @@ assignments. `-WhatIf` shows what would be created without creating anything.
   Use `-Filter`, `-Exclude` or `-Interactive` when you run it again.
 - **Policies are assigned on import.** Groups with the same name in the target tenant
   receive the policy right away. Want to look first? Leave the group names in
-  `groupMappings` pointing to a pilot group, or remove the assignments afterwards.
+  `groupMappings` pointing to a pilot group, or remove the assignments afterwards. Map
+  exclusion groups to a real exclusion group, not to the pilot group: one entry serves both
+  inclusion and exclusion, so mapping everything to the pilot group excludes the pilot too.
 - **An open placeholder does not stop the import.** It is reported as
   `[UNREPLACED PLACEHOLDER]`, but the policy is still created with the token in it. Read
   the `-WhatIf` output for these warnings first. `-WhatIf` does not look up groups; use
